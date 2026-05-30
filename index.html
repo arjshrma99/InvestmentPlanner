@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="InvestCalc">
+  <title>Investment Calculators</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <nav class="segment" aria-label="Calculator">
+      <button class="segment-button active" type="button" data-tab="sip">Investment</button>
+      <button class="segment-button" type="button" data-tab="cross">Cross Investment</button>
+      <button class="segment-button" type="button" data-tab="withdrawal">Withdrawal</button>
+    </nav>
+
+    <section class="calculator-card active" id="sip" data-panel>
+      <h1><span class="title-accent">S</span>ystematic <span class="title-accent">I</span>nvestment <span class="title-accent">P</span>lan <button class="info-button" type="button" aria-label="Systematic Investment Plan info" data-tooltip="Projects an investment portfolio using an initial investment, optional monthly investment, expected return, and optional withdrawal plan.">!</button></h1>
+      <div class="divider"></div>
+      <div class="input-list" id="sip-inputs"></div>
+      <label class="check-row">
+        <input type="checkbox" id="sip-withdrawal-enabled">
+        <span>Add Systematic Withdrawal Plan</span>
+      </label>
+      <div class="input-list conditional" id="sip-withdrawal-inputs"></div>
+      <div class="metric-grid" id="sip-results"></div>
+    </section>
+
+    <section class="calculator-card" id="cross" data-panel hidden>
+      <h1>Cross Investment Plan <button class="info-button" type="button" aria-label="Cross Investment Plan info" data-tooltip="Models money growing in an initial portfolio while optional monthly transfers and external SIP contributions build a SIP portfolio, with optional withdrawal planning.">!</button></h1>
+      <div class="divider"></div>
+      <div class="input-list" id="cross-inputs"></div>
+      <div class="section-separator" id="cross-withdrawal-separator"></div>
+      <label class="check-row">
+        <input type="checkbox" id="cross-withdrawal-enabled">
+        <span>Set Systematic Withdrawal Plan</span>
+      </label>
+      <div class="input-list conditional" id="cross-withdrawal-inputs"></div>
+      <div class="section-separator" id="cross-projection-separator"></div>
+      <div class="input-list conditional" id="cross-projection-inputs"></div>
+      <div class="metric-grid" id="cross-results"></div>
+    </section>
+
+    <section class="calculator-card" id="withdrawal" data-panel hidden>
+      <h1>Systematic Withdrawal Plan <button class="info-button" type="button" aria-label="Systematic Withdrawal Plan info" data-tooltip="Estimates how long a portfolio can support withdrawals, sustainable monthly withdrawal, and projected portfolio value over time.">!</button></h1>
+      <div class="divider"></div>
+      <div class="input-list" id="withdrawal-inputs"></div>
+      <div class="input-list conditional" id="withdrawal-max-period-inputs"></div>
+      <div class="metric-grid" id="withdrawal-results"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
