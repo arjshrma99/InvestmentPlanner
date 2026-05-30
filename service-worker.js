@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "investment-calculator-pwa-v83";
+const CACHE_NAME = "investment-calculator-pwa-v82";
 const ASSETS = [
   "./",
   "index.html",

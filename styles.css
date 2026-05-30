@@ -93,10 +93,7 @@ input {
 }
 
 .calculator-card {
-  display: flex;
-  flex-direction: column;
   width: 100%;
-  max-height: calc(100dvh - 106px);
   border: 1px solid var(--line);
   border-radius: 14px;
   background: rgba(31, 41, 55, 0.96);
@@ -127,27 +124,9 @@ h1 .info-button {
 }
 
 .divider {
-  flex: 0 0 auto;
   height: 2px;
   margin: 22px 0;
   background: var(--line);
-}
-
-.calculator-inputs {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-right: 6px;
-}
-
-.calculator-inputs::-webkit-scrollbar {
-  width: 8px;
-}
-
-.calculator-inputs::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.38);
 }
 
 .input-list {
@@ -339,11 +318,10 @@ input[type="range"] {
 }
 
 .metric-grid {
-  flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
   gap: 12px;
-  margin-top: 14px;
+  margin-top: 28px;
   padding: 10px;
   border: 1px solid var(--line-soft);
   border-radius: 12px;
@@ -402,7 +380,6 @@ input[type="range"] {
 
   .calculator-card {
     border-radius: 12px;
-    max-height: calc(100dvh - 88px);
   }
 
   .input-row {
