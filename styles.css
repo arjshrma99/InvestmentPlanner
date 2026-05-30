@@ -119,6 +119,10 @@ h1 .info-button {
   flex: 0 0 auto;
 }
 
+.check-row .info-button {
+  position: relative;
+}
+
 .divider {
   height: 2px;
   margin: 22px 0;
@@ -269,14 +273,44 @@ input[type="range"] {
   display: none;
 }
 
-.section-separator {
-  height: 2px;
-  margin: 14px 0 0;
-  background: rgba(52, 211, 153, 0.72);
+.section-box {
+  display: grid;
+  gap: 24px;
+  margin-top: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 14px;
 }
 
-.section-separator[hidden] {
+.section-box[hidden] {
   display: none;
+}
+
+#cross-initial-box.section-box-active,
+#cross-external-box.section-box-active {
+  border-color: rgba(52, 211, 153, 0.72);
+}
+
+#cross-withdrawal-box.section-box-active {
+  border-color: rgba(251, 146, 60, 0.86);
+}
+
+#cross-projection-box {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+#cross-inputs {
+  gap: 8px;
+}
+
+#cross-withdrawal-box {
+  margin-top: 8px;
+}
+
+#cross .section-box > .check-row {
+  margin-top: 0;
 }
 
 .hidden {
