@@ -17,8 +17,8 @@ const state = {
 };
 
 const controlConfigs = [
-  { id: "crossInitial", group: "cross-inputs", label: "Lumpsum Investment", help: "Starting capital in the source portfolio.", min: 0, max: 100000000, value: 1000000, type: "currency", checkboxId: "cross-initial-enabled" },
-  { id: "crossGrowth", group: "cross-inputs", label: "Initial Investment Growth Rate", help: "Expected annual return of the source portfolio.", min: 0, max: 50, value: 10, type: "percent" },
+  { id: "crossInitial", group: "cross-inputs", label: "Current Investment", help: "Starting capital in the source portfolio.", min: 0, max: 100000000, value: 1000000, type: "currency", checkboxId: "cross-initial-enabled" },
+  { id: "crossGrowth", group: "cross-inputs", label: "Current Growth Rate", help: "Expected annual return of the source portfolio.", min: 0, max: 50, value: 10, type: "percent" },
   { id: "crossMonthlyTransfer", group: "cross-inputs", label: "Add Monthly Transfer to SIP Portfolio", help: "Monthly amount moved from the source portfolio into the SIP portfolio.", min: 0, max: 1000000, value: 50000, type: "currency", log: true, checkboxId: "cross-transfer-enabled" },
   { id: "crossExternalMonthly", group: "cross-inputs", label: "Monthly SIP", help: "Monthly SIP added from outside the source portfolio.", min: 0, max: 1000000, value: 10000, type: "currency", log: true, checkboxId: "cross-external-sip-enabled" },
   { id: "crossExternalPeriod", group: "cross-inputs", label: "Additional SIP Investment Period", help: "Number of years additional SIP contributions continue.", min: 1, max: 100, value: 20, type: "integer", suffix: "years" },
@@ -1082,27 +1082,30 @@ function calculateWithdrawal() {
   const maxYears = Math.round(getValue("withdrawalMaxPeriod"));
   const result = simulateWithdrawals(maxYears * 12);
   const closed = Boolean(result.depletedMonth);
+  const portfolioResult = closed
+    ? metric("Portfolio Lasts", `${Math.ceil(result.depletedMonth / 12)} years`, {
+      color: colorForWithdrawalYears(Math.ceil(result.depletedMonth / 12)),
+    })
+    : metric(`Portfolio After ${maxYears} Years`, formatInr(result.balance));
 
   if (state.withdrawalFinishPortfolioEnabled) {
     const maxMonthlyForPeriod = maxMonthlyWithdrawalForYears(maxYears);
 
     document.getElementById("withdrawal-results").innerHTML = [
-      metric(`Status After ${maxYears} Years`, closed ? "Closed" : "Active", { danger: closed }),
       metric("Maximum Monthly Withdrawal", formatInr(maxMonthlyForPeriod), {
         help: `With this starting monthly withdrawal, along with the annual withdrawal raise, the portfolio becomes 0 after the projected ${maxYears} years.`,
       }),
-      metric(`Portfolio After ${maxYears} Years`, formatInr(result.balance), { danger: closed }),
+      portfolioResult,
     ].join("");
     return;
   }
 
   const sustainableMonthly = maxMonthlyWithdrawalPreservingCorpusForYears(maxYears);
   document.getElementById("withdrawal-results").innerHTML = [
-    metric(`Status After ${maxYears} Years`, closed ? "Closed" : "Active", { danger: closed }),
     metric("Sustainable Monthly Withdrawal", formatInr(sustainableMonthly), {
       help: `Maximum starting monthly withdrawal which, along with the annual withdrawal raise, leaves the portfolio at its starting investment value after ${maxYears} years.`,
     }),
-    metric(`Portfolio After ${maxYears} Years`, formatInr(result.balance), { danger: closed }),
+    portfolioResult,
   ].join("");
 }
 
