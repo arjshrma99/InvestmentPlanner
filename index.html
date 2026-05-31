@@ -14,28 +14,12 @@
 <body>
   <main class="app-shell">
     <nav class="segment" aria-label="Calculator">
-      <button class="segment-button active" type="button" data-tab="sip">Investment</button>
-      <button class="segment-button" type="button" data-tab="cross">Cross Investment</button>
-      <button class="segment-button" type="button" data-tab="withdrawal">Withdrawal</button>
+      <button class="segment-button active" type="button" data-tab="cross">Complete</button>
+      <button class="segment-button" type="button" data-tab="withdrawal">WIthdrwal Only</button>
     </nav>
 
-    <section class="calculator-card active" id="sip" data-panel>
-      <h1><span><span class="title-accent">S</span>ystematic <span class="title-accent">I</span>nvestment <span class="title-accent">P</span>lan</span> <button class="info-button" type="button" aria-label="Systematic Investment Plan info" data-tooltip="Projects an investment portfolio using an initial investment, optional monthly investment, expected return, and optional withdrawal plan.">!</button></h1>
-      <div class="divider"></div>
-      <div class="calculator-inputs">
-        <div class="input-list" id="sip-inputs"></div>
-        <label class="check-row">
-          <input type="checkbox" id="sip-withdrawal-enabled">
-          <span>Add Monthly Withdrawal Plan</span>
-          <button class="info-button" type="button" aria-label="SIP withdrawal plan info" data-tooltip="Enable monthly withdrawals after the selected start year while the investment plan continues.">!</button>
-        </label>
-        <div class="input-list conditional" id="sip-withdrawal-inputs"></div>
-      </div>
-      <div class="metric-grid" id="sip-results"></div>
-    </section>
-
-    <section class="calculator-card" id="cross" data-panel hidden>
-      <h1>Cross Investment Plan <button class="info-button" type="button" aria-label="Cross Investment Plan info" data-tooltip="Models money growing in an initial portfolio while optional monthly transfers and external SIP contributions build a SIP portfolio, with optional withdrawal planning.">!</button></h1>
+    <section class="calculator-card active" id="cross" data-panel>
+      <h1>Complete Investment Plan <button class="info-button" type="button" aria-label="Complete Investment Plan info" data-tooltip="Models money growing in an initial portfolio while optional monthly transfers and external SIP contributions build a SIP portfolio, with optional withdrawal planning.">!</button></h1>
       <div class="divider"></div>
       <div class="calculator-inputs">
         <div class="input-list" id="cross-inputs"></div>
@@ -46,6 +30,13 @@
             <button class="info-button" type="button" aria-label="Cross investment withdrawal plan info" data-tooltip="Enable monthly withdrawals from the combined portfolio, using SIP portfolios first and the initial portfolio after that.">!</button>
           </label>
           <div class="input-list conditional" id="cross-withdrawal-inputs"></div>
+          <div class="conditional" id="cross-withdrawal-options">
+            <label class="check-row">
+              <input type="checkbox" id="cross-finish-portfolio-enabled">
+              <span>Finish portfolio in end</span>
+              <button class="info-button" type="button" aria-label="Cross investment finish portfolio in end info" data-tooltip="Calculate the maximum monthly withdrawal that brings the combined portfolio to 0 at the end of the total investment period.">!</button>
+            </label>
+          </div>
         </div>
         <div class="section-box" id="cross-projection-box">
           <div class="input-list conditional" id="cross-projection-inputs"></div>
@@ -60,6 +51,11 @@
       <div class="calculator-inputs">
         <div class="input-list" id="withdrawal-inputs"></div>
         <div class="input-list conditional" id="withdrawal-max-period-inputs"></div>
+        <label class="check-row">
+          <input type="checkbox" id="withdrawal-finish-portfolio-enabled">
+          <span>Finish portfolio in end</span>
+          <button class="info-button" type="button" aria-label="Finish portfolio in end info" data-tooltip="Calculate the maximum monthly withdrawal that brings the portfolio to 0 at the end of the projection period.">!</button>
+        </label>
       </div>
       <div class="metric-grid" id="withdrawal-results"></div>
     </section>
