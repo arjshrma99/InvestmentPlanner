@@ -336,6 +336,22 @@ function updateCrossWithdrawalStartLimit() {
   startControl.slider.value = valueToSlider(startControl.config, startControl.value);
 }
 
+function updateCrossExternalPeriodLimit() {
+  if (!controls.crossMaxPeriod || !controls.crossExternalPeriod) return;
+
+  const externalPeriodControl = controls.crossExternalPeriod;
+  const maxPeriod = Math.round(getValue("crossMaxPeriod"));
+  externalPeriodControl.config.max = maxPeriod;
+
+  if (externalPeriodControl.value > maxPeriod) {
+    externalPeriodControl.value = maxPeriod;
+    externalPeriodControl.input.value = formatControlValue(externalPeriodControl.config, maxPeriod);
+    state.values.crossExternalPeriod = maxPeriod;
+  }
+
+  externalPeriodControl.slider.value = valueToSlider(externalPeriodControl.config, externalPeriodControl.value);
+}
+
 function updateSipPeriodAvailability() {
   if (!controls.sipMonthly || !controls.sipPeriod) return;
 
@@ -373,6 +389,7 @@ function setValue(id, value, shouldSave = true) {
 
   if (id === "crossMaxPeriod") {
     updateCrossWithdrawalStartLimit();
+    updateCrossExternalPeriodLimit();
   }
 
   if (shouldSave) {
@@ -1215,6 +1232,8 @@ function init() {
   setupTabs();
   controlConfigs.forEach(createControl);
   updateSipPeriodAvailability();
+  updateCrossWithdrawalStartLimit();
+  updateCrossExternalPeriodLimit();
   updateCrossInitialAvailability();
   updateCrossTransferAvailability();
   updateCrossExternalSipAvailability();
