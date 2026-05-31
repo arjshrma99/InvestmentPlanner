@@ -7,11 +7,6 @@ Plain HTML/CSS/JavaScript PWA version of the PyQt6 investment calculator, with S
 From this folder:
 
 ```bash
-python -m http.server 8000
+run index.html
 ```
 
-Open:
-
-```text
-http://localhost:8000
-```
