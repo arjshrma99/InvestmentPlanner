@@ -23,9 +23,9 @@ const controlConfigs = [
   { id: "crossExternalMonthly", group: "cross-inputs", label: "Monthly SIP", help: "Monthly SIP added from outside the source portfolio.", min: 0, max: 1000000, value: 10000, type: "currency", log: true, checkboxId: "cross-external-sip-enabled" },
   { id: "crossExternalPeriod", group: "cross-inputs", label: "Additional SIP Investment Period", help: "Number of years additional SIP contributions continue.", min: 1, max: 100, value: 20, type: "integer", suffix: "years" },
   { id: "crossSipRate", group: "cross-inputs", label: "SIP Portfolio Growth Rate", help: "Expected annual return used for both monthly SIP transfer and monthly external SIP portfolios.", min: 0, max: 50, value: 12, type: "percent" },
+  { id: "crossWithdrawalAmount", group: "cross-withdrawal-inputs", label: "Add Monthly Withdrawal Plan", help: "Enable monthly withdrawals from the combined portfolio, using SIP portfolios first and the initial portfolio after that.", min: 0, max: 10000000, value: 50000, type: "currency", log: true, checkboxId: "cross-withdrawal-enabled" },
   { id: "crossWithdrawalStart", group: "cross-withdrawal-inputs", label: "Start Withdrawals After", help: "Withdrawals begin after this many completed years.", min: 0, max: 99, value: 10, type: "integer", suffix: "years" },
-  { id: "crossWithdrawalIncrement", group: "cross-withdrawal-inputs", label: "Annual Withdrawal Increase", help: "Annual withdrawal increase, converted to a monthly increment internally.", min: 0, max: 50, value: 0, type: "percent" },
-  { id: "crossWithdrawalAmount", group: "cross-withdrawal-inputs", label: "Monthly Withdrawal", help: "First month withdrawal amount, consumed from SIP portfolio first.", min: 0, max: 10000000, value: 50000, type: "currency", log: true },
+  { id: "crossWithdrawalIncrement", group: "cross-projection-inputs", label: "Annual Inflation Rate", help: "Annual inflation rate used to raise monthly withdrawals and inflation-adjust the sustainable target.", min: 0, max: 50, value: 0, type: "percent" },
   {
     id: "crossMaxPeriod",
     group: "cross-projection-inputs",
@@ -40,7 +40,7 @@ const controlConfigs = [
 
   { id: "withdrawalLumpsum", group: "withdrawal-inputs", label: "Starting Portfolio", help: "Starting corpus available for systematic withdrawals.", min: 1000000, max: 100000000, value: 1000000, type: "currency" },
   { id: "withdrawalGrowth", group: "withdrawal-inputs", label: "Expected Annual Return", help: "Expected annual return on the remaining corpus, compounded monthly.", min: 0, max: 50, value: 10, type: "percent" },
-  { id: "withdrawalIncrement", group: "withdrawal-inputs", label: "Annual Withdrawal Increase", help: "Annual withdrawal increase, converted to a monthly increment internally.", min: 0, max: 50, value: 6, type: "percent" },
+  { id: "withdrawalIncrement", group: "withdrawal-inputs", label: "Annual Inflation Rate", help: "Annual inflation rate used to raise monthly withdrawals and inflation-adjust the sustainable target.", min: 0, max: 50, value: 6, type: "percent" },
   { id: "withdrawalMonthly", group: "withdrawal-inputs", label: "Starting Monthly Withdrawal", help: "First month withdrawal amount before increment adjustments.", min: 0, max: 10000000, value: 50000, type: "currency", log: true },
   {
     id: "withdrawalMaxPeriod",
@@ -168,7 +168,7 @@ function parseControlValue(config, text) {
 
   let value = Number(clean);
   if (!Number.isFinite(value)) value = config.value;
-  value = clamp(value, config.min, config.max);
+  value = config.type === "integer" ? clamp(value, config.min, config.max) : minClamp(value, config.min);
   return config.type === "currency" || config.type === "integer" ? Math.round(value) : value;
 }
 
@@ -246,7 +246,10 @@ function updateCrossWithdrawalAvailability() {
     state.crossWithdrawalEnabled = false;
     crossCheckbox.checked = false;
   }
-  crossInputs.hidden = !available || !state.crossWithdrawalEnabled;
+  crossInputs.hidden = !available;
+  setControlDisabled("crossWithdrawalAmount", !state.crossWithdrawalEnabled);
+  setControlFieldsHidden("crossWithdrawalAmount", !state.crossWithdrawalEnabled);
+  setControlRowHidden("crossWithdrawalStart", !state.crossWithdrawalEnabled);
   crossOptions.hidden = !available || !state.crossWithdrawalEnabled;
 }
 
@@ -561,6 +564,7 @@ function metric(label, value, options = {}) {
     label.startsWith("Status After") ? metricHelp["Status After"] :
     label.startsWith("Portfolio After") ? metricHelp["Portfolio After"] : ""
   );
+  const valueExtra = options.valueExtra || "";
   const helpButton = helpText
     ? `<button class="info-button" type="button" aria-label="${label} info" data-tooltip="${helpText}">!</button>`
     : "";
@@ -569,8 +573,13 @@ function metric(label, value, options = {}) {
     <div class="metric${options.hidden ? " hidden" : ""}">
       <div class="metric-label">${label}${helpButton}</div>
       <div class="metric-value${options.danger ? " danger" : ""}"${options.color ? ` style="color:${options.color}"` : ""}>${value}</div>
+      ${valueExtra ? `<div class="metric-subvalue">${valueExtra}</div>` : ""}
     </div>
   `;
+}
+
+function inflationAdjustedSubvalue(value, rateText, years) {
+  return `${value}<button class="info-button" type="button" aria-label="Inflation adjusted info" data-tooltip="Inflation adjusted value as per ${rateText} annual inflation rate and ${years}-year projection period.">!</button>`;
 }
 
 function colorForWithdrawalYears(years) {
@@ -785,17 +794,18 @@ function maxCrossMonthlyWithdrawalForYears(years, withdrawalIncrementRate = null
   return low;
 }
 
-function maxCrossMonthlyWithdrawalPreservingInvestmentForYears(years, withdrawalIncrementRate = null) {
+function maxCrossMonthlyWithdrawalPreservingInvestmentForYears(years, withdrawalIncrementRate = null, targetBalance = null) {
   const targetMonths = years * 12;
   const baseline = simulateCrossInvestment(0, targetMonths, withdrawalIncrementRate);
-  if (baseline.totalBalance <= baseline.totalInvestment) return 0;
+  const endingTarget = targetBalance === null ? baseline.totalInvestment : targetBalance;
+  if (baseline.totalBalance <= endingTarget) return 0;
 
   let low = 0;
   let high = Math.max(getCrossInitialValue(), getCrossTransferValue(), getCrossExternalSipValue(), 1);
 
   while (high < 1e18) {
     const result = simulateCrossInvestment(high, targetMonths, withdrawalIncrementRate);
-    if (result.depletedMonth || result.totalBalance < result.totalInvestment) break;
+    if (result.depletedMonth || result.totalBalance < endingTarget) break;
     low = high;
     high *= 2;
   }
@@ -803,7 +813,7 @@ function maxCrossMonthlyWithdrawalPreservingInvestmentForYears(years, withdrawal
   for (let index = 0; index < 90; index += 1) {
     const mid = (low + high) / 2;
     const result = simulateCrossInvestment(mid, targetMonths, withdrawalIncrementRate);
-    if (result.depletedMonth || result.totalBalance < result.totalInvestment) high = mid;
+    if (result.depletedMonth || result.totalBalance < endingTarget) high = mid;
     else low = mid;
   }
 
@@ -929,6 +939,10 @@ function maxCrossMonthlyWithdrawalFinishingFromToday(years, withdrawalIncrementR
   return low;
 }
 
+function inflationAdjustedValue(value, annualInflationRate, years) {
+  return value * ((1 + annualInflationRate) ** years);
+}
+
 function calculateCrossInvestment() {
   const results = document.getElementById("cross-results");
   const hasSource = state.crossInitialEnabled || state.crossExternalSipEnabled;
@@ -950,25 +964,30 @@ function calculateCrossInvestment() {
     const withdrawalYears = Math.max(1, years - withdrawalStartYears);
 
     const result = simulateCrossInvestment(withdrawalAmount, withdrawalYears * 12);
+    const noWithdrawalResult = simulateCrossInvestment(0, withdrawalYears * 12);
+    const annualInflationRate = getValue("crossWithdrawalIncrement") / 100;
+    const targetBalance = inflationAdjustedValue(noWithdrawalResult.totalInvestment, annualInflationRate, years);
+    const currentValueBalance = result.totalBalance / ((1 + annualInflationRate) ** years);
     const maxMonthlyForPeriod = state.crossFinishPortfolioEnabled
       ? maxCrossMonthlyWithdrawalForYears(withdrawalYears)
-      : maxCrossMonthlyWithdrawalPreservingInvestmentForYears(withdrawalYears);
+      : maxCrossMonthlyWithdrawalPreservingInvestmentForYears(withdrawalYears, null, targetBalance);
     const closed = Boolean(result.depletedMonth);
     const portfolioResult = closed
       ? metric("Portfolio Lasts", `${Math.ceil(result.depletedMonth / 12)} years`, {
         color: colorForWithdrawalYears(Math.ceil(result.depletedMonth / 12)),
       })
       : metric(`Portfolio After ${years} Years`, formatInr(result.totalBalance), {
-        help: `Projected corpus left after the ${years}-year projection period, using a starting monthly withdrawal of ${formatInrFull(withdrawalAmount)}, a ${formatControlValue(controls.crossWithdrawalIncrement.config, getValue("crossWithdrawalIncrement"))} annual raise, and withdrawals starting after ${withdrawalStartYears} years.`,
+        valueExtra: inflationAdjustedSubvalue(formatInr(currentValueBalance), formatControlValue(controls.crossWithdrawalIncrement.config, getValue("crossWithdrawalIncrement")), years),
+        help: `Projected corpus left after the ${years}-year projection period. Inflation-adjusted current value uses ${formatControlValue(controls.crossWithdrawalIncrement.config, getValue("crossWithdrawalIncrement"))} annual inflation. Withdrawal settings use a starting monthly withdrawal of ${formatInrFull(withdrawalAmount)} after ${withdrawalStartYears} years.`,
       });
 
     results.innerHTML = [
       state.crossFinishPortfolioEnabled
         ? metric("Maximum Monthly Withdrawal", formatInr(maxMonthlyForPeriod), {
-          help: `With this starting monthly withdrawal, along with the annual withdrawal raise, the portfolio becomes 0 at the end of the ${years}-year projection period.`,
+          help: `With this starting monthly withdrawal, along with annual inflation, the portfolio becomes 0 at the end of the ${years}-year projection period.`,
         })
         : metric("Sustainable Monthly Withdrawal", formatInr(maxMonthlyForPeriod), {
-          help: `Maximum starting monthly withdrawal which, along with the annual withdrawal raise, leaves the portfolio at its total investment value at the end of the ${years}-year projection period.`,
+          help: `Maximum starting monthly withdrawal which, along with annual inflation, leaves the portfolio at the inflation-adjusted total investment value of ${formatInrFull(noWithdrawalResult.totalInvestment)} at the end of the ${years}-year projection period.`,
         }),
       portfolioResult,
     ].join("");
@@ -980,9 +999,14 @@ function calculateCrossInvestment() {
   maxPeriodControl.slider.value = valueToSlider(maxPeriodControl.config, getValue("crossMaxPeriod"));
 
   const result = simulateCrossInvestment();
+  const annualInflationRate = getValue("crossWithdrawalIncrement") / 100;
+  const currentValueBalance = result.totalBalance / ((1 + annualInflationRate) ** years);
   results.innerHTML = [
     metric("Total Investment", formatInr(result.totalInvestment)),
-    metric(`Portfolio After ${years} Years`, formatInr(result.totalBalance)),
+    metric(`Portfolio After ${years} Years`, formatInr(result.totalBalance), {
+      valueExtra: inflationAdjustedSubvalue(formatInr(currentValueBalance), formatControlValue(controls.crossWithdrawalIncrement.config, getValue("crossWithdrawalIncrement")), years),
+      help: `Projected corpus left after the ${years}-year projection period. Inflation-adjusted current value uses ${formatControlValue(controls.crossWithdrawalIncrement.config, getValue("crossWithdrawalIncrement"))} annual inflation.`,
+    }),
   ].join("");
 }
 
@@ -1061,16 +1085,17 @@ function maxMonthlyWithdrawalForYears(years) {
   return low;
 }
 
-function maxMonthlyWithdrawalPreservingCorpusForYears(years) {
+function maxMonthlyWithdrawalPreservingCorpusForYears(years, targetBalance = null) {
   const targetMonths = years * 12;
   const corpus = getValue("withdrawalLumpsum");
+  const endingTarget = targetBalance === null ? corpus : targetBalance;
   let low = 0;
   let high = maxMonthlyWithdrawalForYears(years);
 
   for (let index = 0; index < 80; index += 1) {
     const mid = (low + high) / 2;
     const result = simulateWithdrawals(targetMonths, mid);
-    if (result.depletedMonth || result.balance < corpus) high = mid;
+    if (result.depletedMonth || result.balance < endingTarget) high = mid;
     else low = mid;
   }
 
@@ -1081,28 +1106,34 @@ function calculateWithdrawal() {
   const maxYears = Math.round(getValue("withdrawalMaxPeriod"));
   const result = simulateWithdrawals(maxYears * 12);
   const closed = Boolean(result.depletedMonth);
+  const annualInflationRate = getValue("withdrawalIncrement") / 100;
+  const targetBalance = inflationAdjustedValue(getValue("withdrawalLumpsum"), annualInflationRate, maxYears);
+  const currentValueBalance = result.balance / ((1 + annualInflationRate) ** maxYears);
   const portfolioResult = closed
     ? metric("Portfolio Lasts", `${Math.ceil(result.depletedMonth / 12)} years`, {
       color: colorForWithdrawalYears(Math.ceil(result.depletedMonth / 12)),
     })
-    : metric(`Portfolio After ${maxYears} Years`, formatInr(result.balance));
+    : metric(`Portfolio After ${maxYears} Years`, formatInr(result.balance), {
+      valueExtra: inflationAdjustedSubvalue(formatInr(currentValueBalance), formatControlValue(controls.withdrawalIncrement.config, getValue("withdrawalIncrement")), maxYears),
+      help: `Projected corpus left after ${maxYears} years. Inflation-adjusted current value uses ${formatControlValue(controls.withdrawalIncrement.config, getValue("withdrawalIncrement"))} annual inflation.`,
+    });
 
   if (state.withdrawalFinishPortfolioEnabled) {
     const maxMonthlyForPeriod = maxMonthlyWithdrawalForYears(maxYears);
 
     document.getElementById("withdrawal-results").innerHTML = [
       metric("Maximum Monthly Withdrawal", formatInr(maxMonthlyForPeriod), {
-        help: `With this starting monthly withdrawal, along with the annual withdrawal raise, the portfolio becomes 0 after the projected ${maxYears} years.`,
+        help: `With this starting monthly withdrawal, along with annual inflation, the portfolio becomes 0 after the projected ${maxYears} years.`,
       }),
       portfolioResult,
     ].join("");
     return;
   }
 
-  const sustainableMonthly = maxMonthlyWithdrawalPreservingCorpusForYears(maxYears);
+  const sustainableMonthly = maxMonthlyWithdrawalPreservingCorpusForYears(maxYears, targetBalance);
   document.getElementById("withdrawal-results").innerHTML = [
     metric("Sustainable Monthly Withdrawal", formatInr(sustainableMonthly), {
-      help: `Maximum starting monthly withdrawal which, along with the annual withdrawal raise, leaves the portfolio at its starting investment value after ${maxYears} years.`,
+      help: `Maximum starting monthly withdrawal which, along with annual inflation, leaves the portfolio at the inflation-adjusted starting investment value of ${formatInrFull(getValue("withdrawalLumpsum"))} after ${maxYears} years.`,
     }),
     portfolioResult,
   ].join("");
@@ -1216,6 +1247,7 @@ function setupCheckboxes() {
     calculateAll();
     saveState();
   });
+
 }
 
 function setupBlurOnOutsideTap() {
@@ -1239,6 +1271,7 @@ function setupMetricTooltips() {
     event.stopPropagation();
     showTooltipModal(help.dataset.tooltip);
   });
+
 }
 
 function registerServiceWorker() {

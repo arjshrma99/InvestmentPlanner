@@ -387,6 +387,18 @@ input[type="range"] {
   overflow-wrap: anywhere;
 }
 
+.metric-subvalue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 7px;
+  color: var(--muted-strong);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 .metric-value sup {
   font-size: 0.58em;
   line-height: 0;
