@@ -963,7 +963,6 @@ function calculateCrossInvestment() {
       });
 
     results.innerHTML = [
-      metric("Total Investment", formatInr(result.totalInvestment)),
       state.crossFinishPortfolioEnabled
         ? metric("Maximum Monthly Withdrawal", formatInr(maxMonthlyForPeriod), {
           help: `With this starting monthly withdrawal, along with the annual withdrawal raise, the portfolio becomes 0 at the end of the ${years}-year projection period.`,
