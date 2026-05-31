@@ -17,9 +17,9 @@ const state = {
 };
 
 const controlConfigs = [
-  { id: "crossInitial", group: "cross-inputs", label: "Current Investment", help: "Starting capital in the source portfolio.", min: 0, max: 100000000, value: 1000000, type: "currency", checkboxId: "cross-initial-enabled" },
+  { id: "crossInitial", group: "cross-inputs", label: "Add Current Investment", help: "Starting capital in the source portfolio.", min: 0, max: 100000000, value: 1000000, type: "currency", checkboxId: "cross-initial-enabled" },
   { id: "crossGrowth", group: "cross-inputs", label: "Current Growth Rate", help: "Expected annual return of the source portfolio.", min: 0, max: 50, value: 10, type: "percent" },
-  { id: "crossMonthlyTransfer", group: "cross-inputs", label: "Add Monthly Transfer to SIP Portfolio", help: "Monthly amount moved from the source portfolio into the SIP portfolio.", min: 0, max: 1000000, value: 50000, type: "currency", log: true, checkboxId: "cross-transfer-enabled" },
+  { id: "crossMonthlyTransfer", group: "cross-inputs", label: "Transfer Monthly to SIP Portfolio", help: "Monthly amount moved from the source portfolio into the SIP portfolio.", min: 0, max: 1000000, value: 50000, type: "currency", log: true, checkboxId: "cross-transfer-enabled" },
   { id: "crossExternalMonthly", group: "cross-inputs", label: "Monthly SIP", help: "Monthly SIP added from outside the source portfolio.", min: 0, max: 1000000, value: 10000, type: "currency", log: true, checkboxId: "cross-external-sip-enabled" },
   { id: "crossExternalPeriod", group: "cross-inputs", label: "Additional SIP Investment Period", help: "Number of years additional SIP contributions continue.", min: 1, max: 100, value: 20, type: "integer", suffix: "years" },
   { id: "crossSipRate", group: "cross-inputs", label: "SIP Portfolio Growth Rate", help: "Expected annual return used for both monthly SIP transfer and monthly external SIP portfolios.", min: 0, max: 50, value: 12, type: "percent" },
