@@ -23,7 +23,7 @@ const controlConfigs = [
   { id: "crossExternalMonthly", group: "cross-inputs", label: "Monthly SIP", help: "Monthly SIP added from outside the source portfolio.", min: 0, max: 1000000, value: 10000, type: "currency", log: true, checkboxId: "cross-external-sip-enabled" },
   { id: "crossExternalPeriod", group: "cross-inputs", label: "Additional SIP Investment Period", help: "Number of years additional SIP contributions continue.", min: 1, max: 100, value: 20, type: "integer", suffix: "years" },
   { id: "crossSipRate", group: "cross-inputs", label: "SIP Portfolio Growth Rate", help: "Expected annual return used for both monthly SIP transfer and monthly external SIP portfolios.", min: 0, max: 50, value: 12, type: "percent" },
-  { id: "crossWithdrawalStart", group: "cross-withdrawal-inputs", label: "Start Withdrawals After", help: "Withdrawals begin after this many completed years.", min: 0, max: 100, value: 10, type: "integer", suffix: "years" },
+  { id: "crossWithdrawalStart", group: "cross-withdrawal-inputs", label: "Start Withdrawals After", help: "Withdrawals begin after this many completed years.", min: 0, max: 99, value: 10, type: "integer", suffix: "years" },
   { id: "crossWithdrawalIncrement", group: "cross-withdrawal-inputs", label: "Annual Withdrawal Increase", help: "Annual withdrawal increase, converted to a monthly increment internally.", min: 0, max: 50, value: 0, type: "percent" },
   { id: "crossWithdrawalAmount", group: "cross-withdrawal-inputs", label: "Monthly Withdrawal", help: "First month withdrawal amount, consumed from SIP portfolio first.", min: 0, max: 10000000, value: 50000, type: "currency", log: true },
   {
@@ -320,36 +320,46 @@ function updateCrossExternalSipAvailability() {
   updateCrossWithdrawalAvailability();
 }
 
-function updateCrossWithdrawalStartLimit() {
+function syncCrossWithdrawalStartPeriod(changedId) {
   if (!controls.crossMaxPeriod || !controls.crossWithdrawalStart) return;
 
-  const startControl = controls.crossWithdrawalStart;
-  const maxStartYear = Math.max(0, Math.round(getValue("crossMaxPeriod")) - 1);
-  startControl.config.max = maxStartYear;
+  const projectionPeriod = Math.round(getValue("crossMaxPeriod"));
+  const withdrawalStart = Math.round(getValue("crossWithdrawalStart"));
 
-  if (startControl.value > maxStartYear) {
-    startControl.value = maxStartYear;
-    startControl.input.value = formatControlValue(startControl.config, maxStartYear);
-    state.values.crossWithdrawalStart = maxStartYear;
+  if (changedId === "crossWithdrawalStart" && projectionPeriod <= withdrawalStart) {
+    setControlValueOnly("crossMaxPeriod", withdrawalStart + 1);
   }
 
-  startControl.slider.value = valueToSlider(startControl.config, startControl.value);
+  if (changedId === "crossMaxPeriod" && withdrawalStart >= projectionPeriod) {
+    setControlValueOnly("crossWithdrawalStart", Math.max(0, projectionPeriod - 1));
+  }
 }
 
-function updateCrossExternalPeriodLimit() {
+function setControlValueOnly(id, value) {
+  if (!controls[id]) return;
+
+  const control = controls[id];
+  const clean = parseControlValue(control.config, value);
+  control.value = clean;
+  control.slider.value = valueToSlider(control.config, clean);
+  control.input.value = formatControlValue(control.config, clean);
+  state.values[id] = clean;
+}
+
+function syncCrossInvestmentPeriods(changedId) {
   if (!controls.crossMaxPeriod || !controls.crossExternalPeriod) return;
 
-  const externalPeriodControl = controls.crossExternalPeriod;
-  const maxPeriod = Math.round(getValue("crossMaxPeriod"));
-  externalPeriodControl.config.max = maxPeriod;
+  const projectionPeriod = Math.round(getValue("crossMaxPeriod"));
+  const sipPeriod = Math.round(getValue("crossExternalPeriod"));
 
-  if (externalPeriodControl.value > maxPeriod) {
-    externalPeriodControl.value = maxPeriod;
-    externalPeriodControl.input.value = formatControlValue(externalPeriodControl.config, maxPeriod);
-    state.values.crossExternalPeriod = maxPeriod;
+  if (changedId === "crossExternalPeriod" && sipPeriod > projectionPeriod) {
+    setControlValueOnly("crossMaxPeriod", sipPeriod);
+    syncCrossWithdrawalStartPeriod("crossExternalPeriod");
   }
 
-  externalPeriodControl.slider.value = valueToSlider(externalPeriodControl.config, externalPeriodControl.value);
+  if (changedId === "crossMaxPeriod" && projectionPeriod < sipPeriod) {
+    setControlValueOnly("crossExternalPeriod", projectionPeriod);
+  }
 }
 
 function updateSipPeriodAvailability() {
@@ -387,9 +397,17 @@ function setValue(id, value, shouldSave = true) {
     updateCrossExternalSipAvailability();
   }
 
+  if (id === "crossExternalPeriod") {
+    syncCrossInvestmentPeriods(id);
+  }
+
+  if (id === "crossWithdrawalStart") {
+    syncCrossWithdrawalStartPeriod(id);
+  }
+
   if (id === "crossMaxPeriod") {
-    updateCrossWithdrawalStartLimit();
-    updateCrossExternalPeriodLimit();
+    syncCrossWithdrawalStartPeriod(id);
+    syncCrossInvestmentPeriods(id);
   }
 
   if (shouldSave) {
@@ -1232,8 +1250,8 @@ function init() {
   setupTabs();
   controlConfigs.forEach(createControl);
   updateSipPeriodAvailability();
-  updateCrossWithdrawalStartLimit();
-  updateCrossExternalPeriodLimit();
+  syncCrossWithdrawalStartPeriod("crossWithdrawalStart");
+  syncCrossInvestmentPeriods("crossExternalPeriod");
   updateCrossInitialAvailability();
   updateCrossTransferAvailability();
   updateCrossExternalSipAvailability();
