@@ -551,8 +551,8 @@ function simulatePortfolioWithdrawal(startBalance, annualRate, monthlyWithdrawal
   let balance = startBalance;
   let totalWithdrawn = 0;
   let depletedMonth = null;
-  const monthlyGrowthRate = annualRate / 12;
-  const monthlyIncrementRate = incrementRate / 12;
+  const monthlyGrowthRate = (1 + annualRate) ** (1 / 12) - 1;
+  const monthlyIncrementRate = (1 + incrementRate) ** (1 / 12) - 1;
 
   for (let month = 1; month <= monthLimit; month += 1) {
     balance *= 1 + monthlyGrowthRate;
@@ -574,7 +574,7 @@ function simulatePortfolioWithdrawal(startBalance, annualRate, monthlyWithdrawal
 
 function maxMonthlyWithdrawalFromPortfolio(startBalance, annualRate, years, incrementRate = 0) {
   const targetMonths = years * 12;
-  const monthlyRate = annualRate / 12;
+  const monthlyRate = (1 + annualRate) ** (1 / 12) - 1;
   let low = 0;
   let high = startBalance * (1 + monthlyRate);
 
@@ -595,8 +595,8 @@ function simulateSipWithdrawalPlan(monthlyWithdrawal, withdrawalMonthsLimit) {
   const incrementRate = getValue("sipWithdrawalIncrement") / 100;
   const sipMonths = Math.round(getValue("sipPeriod")) * 12;
   const withdrawalStartMonth = Math.round(getValue("sipWithdrawalStart")) * 12;
-  const monthlyRate = annualRate / 12;
-  const monthlyIncrementRate = incrementRate / 12;
+  const monthlyRate = (1 + annualRate) ** (1 / 12) - 1;
+  const monthlyIncrementRate = (1 + incrementRate) ** (1 / 12) - 1;
   const totalMonths = withdrawalStartMonth + withdrawalMonthsLimit;
 
   let balance = lumpsum;
@@ -652,10 +652,10 @@ function maxSipMonthlyWithdrawalForYears(years) {
 function simulateCrossInvestment(monthlyWithdrawal = 0, withdrawalMonthsLimit = 0, withdrawalIncrementRate = null) {
   const monthlyTransfer = getCrossTransferValue();
   const externalSip = getCrossExternalSipValue();
-  const sourceMonthlyRate = (getValue("crossGrowth") / 100) / 12;
-  const sipMonthlyRate = (getValue("crossSipRate") / 100) / 12;
+  const sourceMonthlyRate = (1 + (getValue("crossGrowth") / 100)) ** (1 / 12) - 1;
+  const sipMonthlyRate = (1 + (getValue("crossSipRate") / 100)) ** (1 / 12) - 1;
   const incrementRate = withdrawalIncrementRate === null ? getValue("crossWithdrawalIncrement") / 100 : withdrawalIncrementRate;
-  const incrementMonthlyRate = incrementRate / 12;
+  const incrementMonthlyRate = (1 + incrementRate) ** (1 / 12) - 1;
   const projectionMonths = Math.round(getValue("crossMaxPeriod")) * 12;
   const transferMonths = state.crossInitialEnabled && state.crossTransferEnabled ? projectionMonths : 0;
   const externalSipMonths = state.crossExternalSipEnabled ? Math.round(getValue("crossExternalPeriod")) * 12 : 0;
@@ -778,9 +778,9 @@ function maxCrossMonthlyWithdrawalPreservingInvestmentForYears(years, withdrawal
 function simulateCrossInvestmentWithImmediateWithdrawal(monthlyWithdrawal, years, withdrawalIncrementRate = 0.06) {
   const monthlyTransfer = getCrossTransferValue();
   const externalSip = getCrossExternalSipValue();
-  const sourceMonthlyRate = (getValue("crossGrowth") / 100) / 12;
-  const sipMonthlyRate = (getValue("crossSipRate") / 100) / 12;
-  const incrementMonthlyRate = withdrawalIncrementRate / 12;
+  const sourceMonthlyRate = (1 + (getValue("crossGrowth") / 100)) ** (1 / 12) - 1;
+  const sipMonthlyRate = (1 + (getValue("crossSipRate") / 100)) ** (1 / 12) - 1;
+  const incrementMonthlyRate = (1 + withdrawalIncrementRate) ** (1 / 12) - 1;
   const projectionMonths = years * 12;
   const transferMonths = state.crossInitialEnabled && state.crossTransferEnabled ? projectionMonths : 0;
   const externalSipMonths = state.crossExternalSipEnabled ? Math.round(getValue("crossExternalPeriod")) * 12 : 0;
@@ -958,7 +958,7 @@ function calculateSip() {
   const annualRate = getValue("sipRate") / 100;
   const years = Math.round(getValue("sipPeriod"));
   const months = years * 12;
-  const monthlyRate = annualRate / 12;
+  const monthlyRate = (1 + annualRate) ** (1 / 12) - 1;
   const withdrawalStartMonth = Math.round(getValue("sipWithdrawalStart")) * 12;
   const withdrawalAmount = getValue("sipWithdrawalAmount");
 
@@ -1013,7 +1013,7 @@ function maxMonthlyWithdrawalForYears(years) {
   const targetMonths = years * 12;
   const corpus = getValue("withdrawalLumpsum");
   const annualRate = getValue("withdrawalGrowth") / 100;
-  const monthlyRate = annualRate / 12;
+  const monthlyRate = (1 + annualRate) ** (1 / 12) - 1;
   let low = 0;
   let high = corpus * (1 + monthlyRate);
 
